@@ -1,17 +1,13 @@
 const { Client, LocalAuth } = require('whatsapp-web.js');
 const TelegramBot = require('node-telegram-bot-api');
-const express = require('express');
 const sqlite3 = require('sqlite3').verbose();
 const path = require('path');
-
-const app = express();
-const port = process.env.PORT || 3000;
 
 // ==================== DATABASE SETUP ====================
 const dbPath = path.join(__dirname, 'database.sqlite');
 const db = new sqlite3.Database(dbPath);
 
-// Create a table for linking codes
+// Create tables for linking codes and linked users
 db.serialize(() => {
   db.run(`CREATE TABLE IF NOT EXISTS linking_codes (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -19,86 +15,148 @@ db.serialize(() => {
     code TEXT NOT NULL,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
   )`);
+
+  db.run(`CREATE TABLE IF NOT EXISTS linked_users (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    phone_number TEXT UNIQUE NOT NULL,
+    linked_at DATETIME DEFAULT CURRENT_TIMESTAMP
+  )`);
   console.log('Database ready.');
 });
 
 // ==================== TELEGRAM BOT SETUP ====================
-const telegramToken = process.env.TELEGRAM_BOT_TOKEN; // You will set this in Render
+const telegramToken = process.env.TELEGRAM_BOT_TOKEN; // SET THIS IN RENDER
 const telegramBot = new TelegramBot(telegramToken, { polling: true });
 
-// Listen for /start command on Telegram
+// Store pending token promises (simulates wait)
+const pendingTokens = new Map();
+
+// Function to generate a random 6-digit code
+function generateToken() {
+    return Math.floor(100000 + Math.random() * 900000).toString();
+}
+
+// 1. Handle /start command
 telegramBot.onText(/\/start/, (msg) => {
   const chatId = msg.chat.id;
   const welcomeText = `
-🤖 *Welcome to Shadow Bot Manager*
+*🔹 Welcome to Shadow Bot Manager (Server 1) 🔹*
 
-To link your WhatsApp account, please send your phone number in *international format*.
+*How to Link Your WhatsApp:*
+1. Use the /link command followed by your phone number.
+   • Example: \`/link +1234567890\`
 
-Example: \\+1234567890
+2. You will receive a 6-digit linking token.
+
+3. Open *WhatsApp → Linked Devices → Link a Device → Link with phone number*.
+
+4. Enter your phone number and the token.
+
+*Other Commands:*
+/link +1234567890 - Request a linking token.
+/progress - Check if your number is linked.
   `;
-  telegramBot.sendMessage(chatId, welcomeText, { parse_mode: 'MarkdownV2' });
+  telegramBot.sendMessage(chatId, welcomeText, { parse_mode: 'Markdown' });
 });
 
-// Listen for phone numbers sent by users
-telegramBot.on('message', (msg) => {
+// 2. Handle /link command
+telegramBot.onText(/\/link (.+)/, (msg, match) => {
   const chatId = msg.chat.id;
-  const text = msg.text;
+  const phoneNumber = match[1].trim();
 
-  // Simple regex to match international phone numbers
-  if (text.match(/^\+\d{10,14}$/)) {
-    const phoneNumber = text;
-    const linkingCode = Math.floor(100000 + Math.random() * 900000); // Generate 6-digit code
+  // Validate phone number format
+  if (!phoneNumber.match(/^\+\d{10,14}$/)) {
+    return telegramBot.sendMessage(chatId, '❌ *Error:* Please provide a valid phone number in international format.\nExample: `/link +1234567890`', { parse_mode: 'Markdown' });
+  }
 
-    // Save the code to the database
-    db.run(
-      `INSERT OR REPLACE INTO linking_codes (phone_number, code) VALUES (?, ?)`,
-      [phoneNumber, linkingCode],
-      function(err) {
-        if (err) {
-          return telegramBot.sendMessage(chatId, 'Error. Please try again.');
-        }
-        // Send instructions to the user
-        const instructions = `
-✅ *Linking Code Generated*
+  // Confirm request
+  telegramBot.sendMessage(chatId, '✅ *Request Received.*\nYou will be sent a WhatsApp token shortly. Please wait patiently.', { parse_mode: 'Markdown' });
 
-Your code is: *${linkingCode}*
+  // Simulate processing delay (30 seconds)
+  pendingTokens.set(chatId, phoneNumber);
+  setTimeout(() => {
+    if (pendingTokens.has(chatId)) {
+      const code = generateToken();
+      
+      // Save to database
+      db.run(
+        `INSERT OR REPLACE INTO linking_codes (phone_number, code) VALUES (?, ?)`,
+        [phoneNumber, code],
+        function(err) {
+          if (err) {
+            return telegramBot.sendMessage(chatId, '❌ Database error. Please try again.');
+          }
+          // Send the token to the user
+          const message = `
+*✅ Your Linking Token is:* \`${code}\`
 
-*To link your account:*
+*To complete linking:*
 1. Open *WhatsApp* on your phone
 2. Go to *Settings → Linked Devices → Link a Device*
 3. Choose *"Link with phone number"*
 4. Enter your phone number: *${phoneNumber}*
-5. Enter the code above
+5. Enter this code: *${code}*
 
-Your account will then be linked\\!
-        `;
-        telegramBot.sendMessage(chatId, instructions, { parse_mode: 'MarkdownV2' });
-      }
-    );
-  } else if (!text.startsWith('/')) {
-    telegramBot.sendMessage(chatId, 'Please send a valid phone number in international format (e.g., \\+1234567890)\\.', { parse_mode: 'MarkdownV2' });
+Use /progress to check your linking status.
+          `;
+          telegramBot.sendMessage(chatId, message, { parse_mode: 'Markdown' });
+          pendingTokens.delete(chatId);
+        }
+      );
+    }
+  }, 30000); // 30 second delay
+});
+
+// 3. Handle /progress command
+telegramBot.onText(/\/progress/, (msg) => {
+  const chatId = msg.chat.id;
+  
+  // Check if user has a pending token first
+  const pendingNumber = pendingTokens.get(chatId);
+  if (pendingNumber) {
+    return telegramBot.sendMessage(chatId, `⏳ Your token for *${pendingNumber}* is being generated. Please wait.`, { parse_mode: 'Markdown' });
   }
+
+  // Check database for linked status
+  db.get(`SELECT * FROM linked_users WHERE phone_number = ?`, [pendingNumber], (err, row) => {
+    if (err) {
+      return telegramBot.sendMessage(chatId, '❌ Database error. Please try again.');
+    }
+    if (row) {
+      telegramBot.sendMessage(chatId, `✅ *Number Linked Successfully!*\nYour number *${row.phone_number}* is now connected to Shadow Bot. You can now use commands in WhatsApp.`, { parse_mode: 'Markdown' });
+    } else {
+      telegramBot.sendMessage(chatId, '❌ *Not Linked Yet.*\nPlease use /link +1234567890 to get started.', { parse_mode: 'Markdown' });
+    }
+  });
 });
 
 // ==================== WHATSAPP BOT SETUP ====================
-// (This part remains the same as before for handling WhatsApp commands)
 const client = new Client({
     authStrategy: new LocalAuth(),
-    puppeteer: { headless: true, args: ['--no-sandbox', '--disable-setuid-sandbox'] }
+    puppeteer: { 
+        headless: true, 
+        args: ['--no-sandbox', '--disable-setuid-sandbox'] 
+    }
 });
 
 client.on('qr', (qr) => {
-    console.log('WhatsApp QR code received. This is for the main bot account.');
-    // We'll handle this differently now. Maybe for an admin account.
+    console.log('Scan this QR code to link the main bot account:');
+    // You can add QR terminal generation here if needed
 });
 
 client.on('ready', () => {
     console.log('✅ Main WhatsApp Bot is online and ready!');
 });
 
-// Start the Express server
-app.listen(port, () => {
-    console.log(`Server is running on port ${port}`);
+// Handle incoming WhatsApp messages for linking
+client.on('message', async (msg) => {
+  // This is where you'll add logic to verify codes from WhatsApp
+  // For now, well just acknowledge messages
+  if (msg.body.toLowerCase() === 'hi') {
+    msg.reply('Hello! Use .menu to see commands.');
+  }
 });
 
 client.initialize();
+
+// Note: You'll need to add the WhatsApp message handler to check codes against the database
