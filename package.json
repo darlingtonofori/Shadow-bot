@@ -1,7 +1,7 @@
 {
   "name": "shadow-bot",
   "version": "1.0.0",
-  "description": "A simple WhatsApp bot",
+  "description": "A WhatsApp bot for automation",
   "main": "index.js",
   "scripts": {
     "start": "node index.js"
