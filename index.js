@@ -1,13 +1,13 @@
 const { Client, LocalAuth } = require('whatsapp-web.js');
 const qrcode = require('qrcode-terminal');
-const express = require('express'); // Import Express for the admin page
+const express = require('express');
 
 const app = express();
 const port = process.env.PORT || 3000;
 
 // Store the QR code and status for the admin page
 let qrCodeData = null;
-let botStatus = 'Not ready yet. Scan the QR code.';
+let botStatus = 'Getting ready... Please wait.';
 
 const client = new Client({
     authStrategy: new LocalAuth(),
@@ -19,10 +19,10 @@ const client = new Client({
 
 // WhatsApp QR Code and Ready Events
 client.on('qr', (qr) => {
-    qrCodeData = qr; // Save the QR code data
+    qrCodeData = qr;
     botStatus = 'Scan the QR code below to link your account.';
     console.log('QR code received. Visit /admin to see it.');
-    qrcode.generate(qr, { small: true }); // Optional: still show in logs but it's now private
+    qrcode.generate(qr, { small: true });
 });
 
 client.on('ready', () => {
@@ -30,12 +30,10 @@ client.on('ready', () => {
     console.log(botStatus);
 });
 
-// Simple authentication for the admin page (Basic Auth)
-// Set these values in Render's environment variables
+// Simple authentication for the admin page
 const ADMIN_USERNAME = process.env.ADMIN_USER || 'admin';
 const ADMIN_PASSWORD = process.env.ADMIN_PASS || 'password';
 
-// Middleware to check login
 const requireAuth = (req, res, next) => {
     const auth = req.headers.authorization;
     if (!auth) {
@@ -61,7 +59,6 @@ app.get('/admin', requireAuth, (req, res) => {
     
     if (qrCodeData) {
         html += `<p>Scan this QR code with WhatsApp:</p>`;
-        // Generate the QR code as text for the web
         qrcode.generate(qrCodeData, { small: true }, (qrcodeText) => {
             html += `<pre>${qrcodeText}</pre>`;
             res.send(html);
@@ -72,9 +69,9 @@ app.get('/admin', requireAuth, (req, res) => {
     }
 });
 
-// Start the Express server to serve the admin page
+// Start the Express server
 app.listen(port, () => {
-    console.log(`Admin panel available at: http://localhost:${port}/admin`);
+    console.log(`Admin panel is ready at: http://localhost:${port}/admin`);
 });
 
 // --- WhatsApp Bot Commands Logic ---
@@ -85,14 +82,17 @@ client.on('message', async (msg) => {
     const text = msg.body;
     const sender = msg.from;
 
+    // .menu command
     if (text === '.menu') {
-        msg.reply(`*Shadow Bot Commands:*\n\n.menu - Show this menu\n.ping - Check if I'm alive\n.autoreply on/off - Toggle auto-reply\n.typosimu - Simulate typing`);
+        msg.reply(`*🛠 Shadow Bot v1.0* \n\n*.menu* - Show commands\n*.ping* - Check online status\n*.autoreply on/off* - Toggle auto-reply`);
     }
 
+    // .ping command
     if (text === '.ping') {
         msg.reply('Pong! 🏓');
     }
 
+    // .autoreply command
     if (text === '.autoreply on') {
         autoReplyOn = true;
         msg.reply('Auto-reply turned ON ✅');
@@ -102,14 +102,7 @@ client.on('message', async (msg) => {
         msg.reply('Auto-reply turned OFF ❌');
     }
 
-    if (text === '.typosimu') {
-        await msg.chat.sendStateTyping();
-        setTimeout(async () => {
-            await msg.chat.clearState();
-            msg.reply('Finished typing simulation.');
-        }, 5000);
-    }
-
+    // Auto-reply logic
     if (autoReplyOn && !text.startsWith('.') && sender !== 'status@broadcast') {
         msg.reply("My senpai ain't available at this moment.");
     }
