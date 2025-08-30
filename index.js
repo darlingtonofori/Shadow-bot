@@ -40,6 +40,16 @@ const requireAuth = (req, res, next) => {
     }
 };
 
+// Health check endpoint
+app.get('/health', (req, res) => {
+    res.json({
+        status: 'ok',
+        botReady: isBotReady,
+        timestamp: new Date().toISOString(),
+        qrCode: qrCodeData ? 'available' : 'not needed'
+    });
+});
+
 // Admin route to show QR code and status
 app.get('/admin', requireAuth, async (req, res) => {
     let html = `
@@ -137,52 +147,61 @@ client.on('disconnected', (reason) => {
     isBotReady = false;
 });
 
-// IMPROVED MESSAGE HANDLING
+// SIMPLIFIED MESSAGE HANDLING WITH DEBUGGING
 client.on('message', async (msg) => {
-    // Debug: log all messages
-    console.log('Received message:', {
+    console.log('📩 Received message:', {
         from: msg.from,
         fromMe: msg.fromMe,
         body: msg.body,
-        type: msg.type
+        type: msg.type,
+        timestamp: new Date().toISOString()
     });
 
     // Only respond to text messages from yourself that start with a dot
-    if (msg.type === 'chat' && msg.fromMe && msg.body && msg.body.startsWith('.')) {
-        const text = msg.body.toLowerCase().trim();
-        console.log('Processing command:', text);
+    if (msg.fromMe && msg.body && msg.body.startsWith('.')) {
+        const command = msg.body.toLowerCase().trim();
+        console.log('🔍 Detected command:', command);
 
         try {
-            if (text === '.ping') {
-                console.log('Sending pong response');
-                await msg.reply('Pong! 🏓');
+            // Get the chat to send response
+            const chat = await msg.getChat();
+            
+            if (command === '.ping') {
+                console.log('🚀 Sending pong response');
+                await chat.sendMessage('Pong! 🏓');
+                console.log('✅ Pong sent successfully');
             }
-            else if (text === '.arise') {
+            else if (command === '.arise') {
                 const menuText = `🛠 *NGX5 Bot Menu* 🛠
 
 *.ping* - Check if I'm online
-*.typesimu* - Simulate typing
-*.reclaim* - Simulate recording
-*.bluetick* - Auto-read messages
-*.broadcast* - Broadcast message
-*.vv* - Save view-once media
 *.autoreply* - Toggle auto-reply
 
-*Status:* ✅ Connected`;
-                await msg.reply(menuText);
+*Status:* ✅ Connected and working!`;
+                await chat.sendMessage(menuText);
+                console.log('✅ Menu sent successfully');
             }
-            else if (text === '.autoreply') {
-                await msg.reply('Auto-reply is: ON ✅\nMessage: "MY SENPAI AIN\'T AVAILABLE!"');
+            else if (command === '.autoreply') {
+                await chat.sendMessage('Auto-reply is: ON ✅\nMessage: "MY SENPAI AIN\'T AVAILABLE!"');
+                console.log('✅ Autoreply message sent');
             }
             else {
-                await msg.reply(`Unknown command: ${text}\nUse .arise for menu`);
+                await chat.sendMessage(`Unknown command: ${command}\nUse .arise for menu`);
+                console.log('❌ Unknown command handled');
             }
-            
-            console.log('Command processed successfully');
         } catch (error) {
-            console.error('Error processing command:', error);
+            console.error('❌ Error sending message:', error);
         }
     }
+});
+
+// Add this event to check if messages are being sent
+client.on('message_create', (msg) => {
+    console.log('📤 Message created (sent by you):', {
+        body: msg.body,
+        fromMe: msg.fromMe,
+        timestamp: new Date().toISOString()
+    });
 });
 
 // Initialize the client
