@@ -1,15 +1,24 @@
 const { Client, LocalAuth } = require('whatsapp-web.js');
 const qrcode = require('qrcode-terminal');
 const express = require('express');
+const QRCode = require('qrcode'); // Add this package for web QR codes
+
 const app = express();
 const port = process.env.PORT || 3000;
+
+// Add to your package.json dependencies:
+// "qrcode": "^1.5.3"
 
 // Store the QR code and status for the admin page
 let qrCodeData = null;
 let botStatus = 'NGX5 is getting ready...';
 
 const client = new Client({
-    authStrategy: new LocalAuth({ clientId: "NGX5-User" })
+    authStrategy: new LocalAuth({ clientId: "NGX5-User" }),
+    puppeteer: {
+        headless: true,
+        args: ['--no-sandbox', '--disable-setuid-sandbox']
+    }
 });
 
 // Simple authentication for the admin page
@@ -34,7 +43,7 @@ const requireAuth = (req, res, next) => {
 };
 
 // Admin route to show QR code and status - THEMED VERSION
-app.get('/admin', requireAuth, (req, res) => {
+app.get('/admin', requireAuth, async (req, res) => {
     let html = `
     <!DOCTYPE html>
     <html lang="en">
@@ -84,9 +93,9 @@ app.get('/admin', requireAuth, (req, res) => {
                 border-radius: 8px;
                 margin: 20px 0;
             }
-            pre {
+            #qrcode {
                 display: inline-block;
-                background-color: #0f0f0f;
+                background-color: white;
                 padding: 15px;
                 border-radius: 8px;
                 border: 1px solid #4169e1;
@@ -105,6 +114,18 @@ app.get('/admin', requireAuth, (req, res) => {
                 font-size: 0.8em;
                 color: #888;
             }
+            .refresh-btn {
+                background-color: #4169e1;
+                color: white;
+                border: none;
+                padding: 10px 20px;
+                border-radius: 5px;
+                cursor: pointer;
+                margin-top: 15px;
+            }
+            .refresh-btn:hover {
+                background-color: #5a7dee;
+            }
         </style>
     </head>
     <body>
@@ -117,15 +138,16 @@ app.get('/admin', requireAuth, (req, res) => {
     `;
     
     if (qrCodeData) {
-        html += `
-            <div class="qr-container">
-                <p>Scan this QR code with <strong>YOUR PHONE</strong> to link NGX5 to your account:</p>
-        `;
-        
-        // Generate the QR code as text for the web
-        qrcode.generate(qrCodeData, { small: true }, (qrcodeText) => {
-            html += `<pre>${qrcodeText}</pre>`;
+        try {
+            // Generate a proper QR code image for the web
+            const qrCodeImage = await QRCode.toDataURL(qrCodeData);
+            
             html += `
+                <div class="qr-container">
+                    <p>Scan this QR code with <strong>YOUR PHONE</strong> to link NGX5 to your account:</p>
+                    <img src="${qrCodeImage}" id="qrcode" alt="WhatsApp QR Code">
+                    <br>
+                    <button class="refresh-btn" onclick="location.reload()">Refresh QR Code</button>
                 </div>
                 <div class="instructions">
                     <strong>Instructions:</strong><br>
@@ -134,29 +156,35 @@ app.get('/admin', requireAuth, (req, res) => {
                     3. Scan the QR code shown above
                 </div>
             `;
-            // Close the container and HTML
+        } catch (err) {
             html += `
-                <div class="footer">
-                    NGX5 WhatsApp Automation System | Secure Admin Panel
+                <div class="qr-container">
+                    <p>Error generating QR code. Please try refreshing the page.</p>
+                    <button class="refresh-btn" onclick="location.reload()">Refresh Page</button>
                 </div>
-            </div>
-        </body>
-        </html>
             `;
-            res.send(html);
-        });
+            console.error('QR code generation error:', err);
+        }
     } else {
         html += `
-            <p>No QR code generated yet. Please wait a moment and refresh the page.</p>
+            <div class="qr-container">
+                <p>No QR code generated yet. Please wait a moment...</p>
+                <button class="refresh-btn" onclick="location.reload()">Refresh Page</button>
+            </div>
+        `;
+    }
+    
+    // Close the container and HTML
+    html += `
             <div class="footer">
                 NGX5 WhatsApp Automation System | Secure Admin Panel
             </div>
         </div>
     </body>
     </html>
-        `;
-        res.send(html);
-    }
+    `;
+    
+    res.send(html);
 });
 
 // Start the Express server to serve the admin page
@@ -169,9 +197,12 @@ client.on('qr', (qr) => {
     qrCodeData = qr;
     botStatus = 'Scan the QR code in the admin panel to link your account.';
     console.log('QR code received. Visit /admin to see it.');
+    // Also show in terminal for debugging
+    qrcode.generate(qr, { small: true });
 });
 
 client.on('ready', () => {
+    qrCodeData = null;
     botStatus = '✅ NGX5 is online and connected to your account!';
     console.log(botStatus);
 });
