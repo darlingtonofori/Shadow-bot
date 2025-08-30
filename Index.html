@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>NGX5 - WhatsApp Pairing</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         * {
             margin: 0;
@@ -105,6 +106,10 @@
             font-weight: bold;
             cursor: pointer;
             transition: transform 0.2s, box-shadow 0.2s;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
         }
         
         .btn:hover {
@@ -164,7 +169,6 @@
             border-top: 3px solid #8a2be2;
             border-radius: 50%;
             animation: spin 1s linear infinite;
-            margin: 0 auto;
             display: none;
         }
         
@@ -188,6 +192,22 @@
             font-size: 0.85em;
             border-left: 4px solid #4169e1;
         }
+        
+        .feature-list {
+            margin: 20px 0;
+            padding-left: 20px;
+        }
+        
+        .feature-list li {
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .feature-icon {
+            color: #8a2be2;
+        }
     </style>
 </head>
 <body>
@@ -197,9 +217,13 @@
             <div class="subtitle">WhatsApp Pairing System</div>
         </div>
         
+        <div class="api-info">
+            <p><i class="fas fa-plug"></i> <strong>API Status:</strong> Connected to Infobip API</p>
+        </div>
+        
         <form id="pairingForm">
             <div class="form-group">
-                <label for="phoneNumber">Phone Number</label>
+                <label for="phoneNumber"><i class="fas fa-mobile-alt"></i> Phone Number</label>
                 <div class="input-group">
                     <div class="country-code">+</div>
                     <input 
@@ -213,7 +237,7 @@
             </div>
             
             <button type="submit" class="btn" id="submitBtn">
-                Generate Pairing Code
+                <i class="fas fa-key"></i> Generate Pairing Code
             </button>
             
             <div class="loader" id="loader"></div>
@@ -225,12 +249,19 @@
             <div class="instructions" id="instructions"></div>
         </div>
         
-        <div class="api-info">
-            <strong>API Status:</strong> Connected to Infobip API
+        <div class="feature-list">
+            <h3><i class="fas fa-star feature-icon"></i> Features</h3>
+            <ul>
+                <li><i class="fas fa-check-circle feature-icon"></i> Secure pairing code generation</li>
+                <li><i class="fas fa-check-circle feature-icon"></i> International number support</li>
+                <li><i class="fas fa-check-circle feature-icon"></i> Professional UI/UX design</li>
+                <li><i class="fas fa-check-circle feature-icon"></i> Instant code delivery</li>
+            </ul>
         </div>
         
         <div class="footer">
-            © 2024 NGX5 WhatsApp Automation System
+            <p><i class="fas fa-code"></i> with <i class="fas fa-heart" style="color: #e91e63;"></i> by NGX5</p>
+            <p>© 2024 NGX5 WhatsApp Automation System</p>
         </div>
     </div>
 
@@ -258,8 +289,7 @@
             
             // Show loading state
             submitBtn.disabled = true;
-            submitBtn.textContent = 'Generating...';
-            loader.style.display = 'block';
+            submitBtn.innerHTML = '<div class="loader"></div> Generating...';
             result.style.display = 'none';
             
             try {
@@ -267,7 +297,7 @@
                 const generatedCode = Math.floor(100000 + Math.random() * 900000).toString();
                 
                 // Simulate API delay
-                await new Promise(resolve => setTimeout(resolve, 1500));
+                await new Promise(resolve => setTimeout(resolve, 2000));
                 
                 // In a real implementation, you would call the Infobip API here:
                 /*
@@ -306,8 +336,7 @@
             } finally {
                 // Reset loading state
                 submitBtn.disabled = false;
-                submitBtn.textContent = 'Generate Pairing Code';
-                loader.style.display = 'none';
+                submitBtn.innerHTML = '<i class="fas fa-key"></i> Generate Pairing Code';
             }
         });
         
@@ -318,11 +347,11 @@
             const instructions = document.getElementById('instructions');
             
             result.className = 'result success';
-            resultMessage.innerHTML = '<strong>✅ Pairing Code Generated Successfully!</strong>';
+            resultMessage.innerHTML = '<strong><i class="fas fa-check-circle"></i> Pairing Code Generated Successfully!</strong>';
             codeDisplay.textContent = formatCode(code);
             
             instructions.innerHTML = `
-                <strong>How to use this code:</strong><br>
+                <strong>How to use this code:</strong><br><br>
                 1. Open WhatsApp on your phone<br>
                 2. Go to <strong>Settings → Linked Devices → Link a Device</strong><br>
                 3. Choose <strong>"Link with phone number"</strong><br>
@@ -340,7 +369,7 @@
             const instructions = document.getElementById('instructions');
             
             result.className = 'result error';
-            resultMessage.innerHTML = `<strong>❌ Error:</strong> ${message}`;
+            resultMessage.innerHTML = `<strong><i class="fas fa-exclamation-circle"></i> Error:</strong> ${message}`;
             codeDisplay.textContent = '';
             instructions.textContent = '';
             
