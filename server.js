@@ -1,17 +1,39 @@
 const express = require('express');
-const path = require('path');
+const { Client } = require('whatsapp-web.js');
 const app = express();
 const port = process.env.PORT || 3000;
 
-// Serve static files
-app.use(express.static(__dirname));
-
-// All routes serve the index.html
-app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, 'index.html'));
+// Initialize WhatsApp client
+const client = new Client({
+    // Add your configuration here
 });
 
-// Start the server
+// API endpoint to generate pairing code
+app.post('/generate-pairing-code', async (req, res) => {
+    try {
+        const { phoneNumber } = req.body;
+        
+        if (!phoneNumber) {
+            return res.status(400).json({ error: 'Phone number is required' });
+        }
+        
+        // Generate pairing code using WhatsApp Web.js
+        const pairingCode = await client.requestPairingCode(phoneNumber);
+        
+        res.json({ 
+            success: true, 
+            code: pairingCode 
+        });
+    } catch (error) {
+        console.error('Error generating pairing code:', error);
+        res.status(500).json({ 
+            success: false, 
+            error: 'Failed to generate pairing code' 
+        });
+    }
+});
+
+// Start server
 app.listen(port, () => {
-  console.log(`NGX5 Pairing service running on port ${port}`);
+    console.log(`Server running on port ${port}`);
 });
