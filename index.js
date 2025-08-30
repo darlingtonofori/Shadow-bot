@@ -1,6 +1,6 @@
 const { Client, LocalAuth } = require('whatsapp-web.js');
 const qrcode = require('qrcode-terminal');
-const express = require('express'); // Import Express to create a web server
+const express = require('express');
 const app = express();
 const port = process.env.PORT || 3000;
 
@@ -13,7 +13,6 @@ const client = new Client({
 });
 
 // Simple authentication for the admin page
-// Set these in Render's environment variables
 const ADMIN_USERNAME = process.env.ADMIN_USER || 'admin';
 const ADMIN_PASSWORD = process.env.ADMIN_PASS || 'password';
 
@@ -62,7 +61,7 @@ app.get('/admin', requireAuth, (req, res) => {
                 border: 1px solid #2d2d2d;
             }
             h1 {
-                color: #8a2be2; /* Purple */
+                color: #8a2be2;
                 text-align: center;
                 margin-bottom: 10px;
                 font-size: 2.2em;
@@ -73,7 +72,7 @@ app.get('/admin', requireAuth, (req, res) => {
                 padding: 15px;
                 border-radius: 8px;
                 margin-bottom: 20px;
-                border-left: 4px solid #4169e1; /* Royal Blue */
+                border-left: 4px solid #4169e1;
             }
             .status strong {
                 color: #4169e1;
@@ -98,7 +97,7 @@ app.get('/admin', requireAuth, (req, res) => {
                 border-radius: 8px;
                 margin-top: 20px;
                 font-size: 0.9em;
-                border-left: 4px solid #8a2be2; /* Purple */
+                border-left: 4px solid #8a2be2;
             }
             .footer {
                 text-align: center;
@@ -122,6 +121,7 @@ app.get('/admin', requireAuth, (req, res) => {
             <div class="qr-container">
                 <p>Scan this QR code with <strong>YOUR PHONE</strong> to link NGX5 to your account:</p>
         `;
+        
         // Generate the QR code as text for the web
         qrcode.generate(qrCodeData, { small: true }, (qrcodeText) => {
             html += `<pre>${qrcodeText}</pre>`;
@@ -158,19 +158,6 @@ app.get('/admin', requireAuth, (req, res) => {
         res.send(html);
     }
 });
-    
-    if (qrCodeData) {
-        html += `<p>Scan this QR code with YOUR PHONE to link NGX5 to your account:</p>`;
-        // Generate the QR code as text for the web
-        qrcode.generate(qrCodeData, { small: true }, (qrcodeText) => {
-            html += `<pre>${qrcodeText}</pre>`;
-            res.send(html);
-        });
-    } else {
-        html += `<p>No QR code generated yet. Wait a moment and refresh.</p>`;
-        res.send(html);
-    }
- );
 
 // Start the Express server to serve the admin page
 app.listen(port, () => {
@@ -179,9 +166,9 @@ app.listen(port, () => {
 
 // WhatsApp Client Events
 client.on('qr', (qr) => {
-    qrCodeData = qr; // Store the QR code data for the admin panel
+    qrCodeData = qr;
     botStatus = 'Scan the QR code in the admin panel to link your account.';
-    console.log('QR code received. Visit /admin to see it.'); // Log message, not the QR code itself
+    console.log('QR code received. Visit /admin to see it.');
 });
 
 client.on('ready', () => {
@@ -198,8 +185,7 @@ client.on('message_create', async (msg) => {
 
         switch(command) {
             case '.arise':
-                const menuText = `
-🛠 *NGX5 Bot Menu* 🛠
+                const menuText = `🛠 *NGX5 Bot Menu* 🛠
 
 *.ping* - Check if I'm online
 *.typesimu* - Simulate typing for 15s
@@ -211,8 +197,7 @@ client.on('message_create', async (msg) => {
 *.autoreply_set [message]* - Set auto-reply text
 *.search [query]* - Google search
 
-*Current Auto-Reply:* "MY SENPIA AIN'T AVAILABLE!"
-                `;
+*Current Auto-Reply:* "MY SENPIA AIN'T AVAILABLE!"`;
                 chat.sendMessage(menuText);
                 break;
 
