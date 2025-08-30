@@ -6,6 +6,17 @@
     <title>NGX5 - WhatsApp Pairing</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
+        :root {
+            --primary: #8a2be2;
+            --secondary: #4169e1;
+            --success: #4CAF50;
+            --error: #f44336;
+            --bg-dark: #0f0f0f;
+            --card-bg: rgba(26, 26, 26, 0.95);
+            --text-light: #e0e0e0;
+            --text-muted: #a0a0a0;
+        }
+        
         * {
             margin: 0;
             padding: 0;
@@ -14,8 +25,8 @@
         }
         
         body {
-            background: linear-gradient(135deg, #0f0f0f, #1a1a2e);
-            color: #e0e0e0;
+            background: linear-gradient(135deg, var(--bg-dark), #1a1a2e);
+            color: var(--text-light);
             min-height: 100vh;
             display: flex;
             justify-content: center;
@@ -24,7 +35,7 @@
         }
         
         .container {
-            background: rgba(26, 26, 26, 0.95);
+            background: var(--card-bg);
             border-radius: 15px;
             padding: 30px;
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
@@ -40,7 +51,7 @@
         }
         
         .logo {
-            color: #8a2be2;
+            color: var(--primary);
             font-size: 2.5em;
             font-weight: bold;
             margin-bottom: 10px;
@@ -48,7 +59,7 @@
         }
         
         .subtitle {
-            color: #a0a0a0;
+            color: var(--text-muted);
             font-size: 1.1em;
         }
         
@@ -59,7 +70,7 @@
         label {
             display: block;
             margin-bottom: 8px;
-            color: #4169e1;
+            color: var(--secondary);
             font-weight: 500;
         }
         
@@ -68,14 +79,14 @@
             align-items: center;
             background: rgba(255, 255, 255, 0.1);
             border-radius: 8px;
-            border: 1px solid #4169e1;
+            border: 1px solid var(--secondary);
             overflow: hidden;
         }
         
         .country-code {
             padding: 15px;
             background: rgba(65, 105, 225, 0.2);
-            color: #4169e1;
+            color: var(--secondary);
             font-weight: bold;
             min-width: 60px;
             text-align: center;
@@ -98,7 +109,7 @@
         .btn {
             width: 100%;
             padding: 15px;
-            background: linear-gradient(135deg, #8a2be2, #4169e1);
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
             border: none;
             border-radius: 8px;
             color: white;
@@ -129,24 +140,24 @@
             padding: 20px;
             background: rgba(255, 255, 255, 0.05);
             border-radius: 8px;
-            border-left: 4px solid #4169e1;
+            border-left: 4px solid var(--secondary);
             display: none;
         }
         
         .success {
-            border-left-color: #4CAF50;
+            border-left-color: var(--success);
             background: rgba(76, 175, 80, 0.1);
         }
         
         .error {
-            border-left-color: #f44336;
+            border-left-color: var(--error);
             background: rgba(244, 67, 54, 0.1);
         }
         
         .code-display {
             font-size: 1.8em;
             font-weight: bold;
-            color: #8a2be2;
+            color: var(--primary);
             text-align: center;
             margin: 15px 0;
             letter-spacing: 3px;
@@ -159,14 +170,14 @@
             border-radius: 8px;
             margin-top: 20px;
             font-size: 0.9em;
-            border-left: 4px solid #8a2be2;
+            border-left: 4px solid var(--primary);
         }
         
         .loader {
             width: 20px;
             height: 20px;
             border: 3px solid #333;
-            border-top: 3px solid #8a2be2;
+            border-top: 3px solid var(--primary);
             border-radius: 50%;
             animation: spin 1s linear infinite;
             display: none;
@@ -190,7 +201,7 @@
             border-radius: 8px;
             margin-top: 20px;
             font-size: 0.85em;
-            border-left: 4px solid #4169e1;
+            border-left: 4px solid var(--secondary);
         }
         
         .feature-list {
@@ -206,7 +217,7 @@
         }
         
         .feature-icon {
-            color: #8a2be2;
+            color: var(--primary);
         }
         
         .api-status {
@@ -220,11 +231,50 @@
         }
         
         .status-online {
-            color: #4CAF50;
+            color: var(--success);
         }
         
         .status-offline {
-            color: #f44336;
+            color: var(--error);
+        }
+        
+        .log-container {
+            margin-top: 20px;
+            padding: 15px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 8px;
+            font-family: monospace;
+            font-size: 0.85em;
+            max-height: 150px;
+            overflow-y: auto;
+            display: none;
+        }
+        
+        .log-entry {
+            margin-bottom: 5px;
+            padding: 5px;
+            border-left: 3px solid var(--secondary);
+            background: rgba(0, 0, 0, 0.2);
+        }
+        
+        .log-error {
+            border-left-color: var(--error);
+        }
+        
+        .log-success {
+            border-left-color: var(--success);
+        }
+        
+        .toggle-log {
+            background: none;
+            border: none;
+            color: var(--secondary);
+            cursor: pointer;
+            font-size: 0.8em;
+            margin-top: 10px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
         }
     </style>
 </head>
@@ -271,6 +321,14 @@
             <div class="instructions" id="instructions"></div>
         </div>
         
+        <button class="toggle-log" id="toggleLog">
+            <i class="fas fa-terminal"></i> Show API Logs
+        </button>
+        
+        <div class="log-container" id="logContainer">
+            <div class="log-entry">System initialized. Ready to generate codes.</div>
+        </div>
+        
         <div class="feature-list">
             <h3><i class="fas fa-star feature-icon"></i> Features</h3>
             <ul>
@@ -295,16 +353,42 @@
         // DOM elements
         const apiStatusIcon = document.getElementById('apiStatusIcon');
         const apiStatusText = document.getElementById('apiStatusText');
+        const toggleLog = document.getElementById('toggleLog');
+        const logContainer = document.getElementById('logContainer');
+        let logsVisible = false;
         
         // Check API connection on page load
         document.addEventListener('DOMContentLoaded', function() {
+            addLog('System initialized');
             checkAPIConnection();
         });
+        
+        // Toggle log visibility
+        toggleLog.addEventListener('click', function() {
+            logsVisible = !logsVisible;
+            logContainer.style.display = logsVisible ? 'block' : 'none';
+            toggleLog.innerHTML = logsVisible ? 
+                '<i class="fas fa-terminal"></i> Hide API Logs' : 
+                '<i class="fas fa-terminal"></i> Show API Logs';
+        });
+        
+        // Add log entry
+        function addLog(message, type = 'info') {
+            const logEntry = document.createElement('div');
+            logEntry.className = `log-entry ${type === 'error' ? 'log-error' : type === 'success' ? 'log-success' : ''}`;
+            
+            const timestamp = new Date().toLocaleTimeString();
+            logEntry.textContent = `[${timestamp}] ${message}`;
+            
+            logContainer.appendChild(logEntry);
+            logContainer.scrollTop = logContainer.scrollHeight;
+        }
         
         // Check if the API is accessible
         async function checkAPIConnection() {
             try {
                 apiStatusText.textContent = 'Checking API connection...';
+                addLog('Testing Infobip API connection');
                 
                 // Try to make a simple request to check if the API is accessible
                 const response = await fetch(`${API_BASE_URL}/whatsapp/1/senders`, {
@@ -318,13 +402,16 @@
                 if (response.status === 200) {
                     apiStatusIcon.className = 'fas fa-circle status-online';
                     apiStatusText.textContent = 'Connected to Infobip API';
+                    addLog('API connection successful', 'success');
                 } else {
+                    addLog(`API returned status: ${response.status}`, 'error');
                     throw new Error(`API returned status: ${response.status}`);
                 }
             } catch (error) {
                 console.error('API connection error:', error);
                 apiStatusIcon.className = 'fas fa-circle status-offline';
                 apiStatusText.textContent = 'API connection failed';
+                addLog(`API connection error: ${error.message}`, 'error');
             }
         }
         
@@ -341,6 +428,7 @@
             // Validate phone number
             if (!phoneNumber.match(/^[0-9]{10,15}$/)) {
                 showError('Please enter a valid phone number (10-15 digits)');
+                addLog('Invalid phone number format entered', 'error');
                 return;
             }
             
@@ -350,8 +438,7 @@
             result.style.display = 'none';
             
             try {
-                // Generate an 8-digit code
-                const generatedCode = Math.floor(10000000 + Math.random() * 90000000).toString();
+                addLog(`Generating code for phone number: +${phoneNumber}`);
                 
                 // For a real implementation, you would call the Infobip API here:
                 /*
@@ -363,7 +450,7 @@
                     },
                     body: JSON.stringify({
                         messages: [{
-                            from: 'YOUR_WHATSAPP_BUSINESS_NUMBER',
+                            from: '+233534332654',
                             to: `+${phoneNumber}`,
                             content: {
                                 templateName: 'pairing_code',
@@ -386,13 +473,19 @@
                 */
                 
                 // Simulate API delay
+                addLog('Calling Infobip API...');
                 await new Promise(resolve => setTimeout(resolve, 2000));
+                
+                // Generate an 8-digit code
+                const generatedCode = Math.floor(10000000 + Math.random() * 90000000).toString();
+                addLog(`Generated code: ${generatedCode}`, 'success');
                 
                 // For demo purposes, we'll simulate a successful response
                 showSuccess(generatedCode);
                 
             } catch (error) {
                 console.error('Error:', error);
+                addLog(`Error generating code: ${error.message}`, 'error');
                 showError('Failed to generate pairing code. Please try again.');
             } finally {
                 // Reset loading state
@@ -421,6 +514,7 @@
             `;
             
             result.style.display = 'block';
+            addLog('Code displayed to user', 'success');
         }
         
         function showError(message) {
