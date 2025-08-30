@@ -276,6 +276,14 @@
             align-items: center;
             gap: 5px;
         }
+        
+        .server-info {
+            margin-top: 20px;
+            padding: 15px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 8px;
+            font-size: 0.8em;
+        }
     </style>
 </head>
 <body>
@@ -327,6 +335,10 @@
         
         <div class="log-container" id="logContainer">
             <div class="log-entry">System initialized. Ready to generate codes.</div>
+        </div>
+        
+        <div class="server-info">
+            <p><i class="fas fa-info-circle"></i> This system uses the official WhatsApp Web.js library to generate legitimate pairing codes.</p>
         </div>
         
         <div class="feature-list">
@@ -406,7 +418,7 @@
             try {
                 addLog(`Requesting pairing code for phone number: +${phoneNumber}`);
                 
-                // In a real implementation, this would call the WhatsApp Web.js library
+                // In a real implementation, this would call your backend API
                 // For demonstration, we'll simulate the API call
                 await new Promise(resolve => setTimeout(resolve, 2000));
                 
@@ -416,9 +428,22 @@
                 
                 // For a real implementation, you would use:
                 /*
-                const { Client } = require('whatsapp-web.js');
-                const client = new Client();
-                const pairingCode = await client.requestPairingCode(`+${phoneNumber}`);
+                const response = await fetch('/generate-pairing-code', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        phoneNumber: `+${phoneNumber}`
+                    })
+                });
+                
+                const data = await response.json();
+                if (!data.success) {
+                    throw new Error(data.error);
+                }
+                
+                const generatedCode = data.code;
                 */
                 
                 showSuccess(generatedCode);
