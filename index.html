@@ -208,6 +208,24 @@
         .feature-icon {
             color: #8a2be2;
         }
+        
+        .api-status {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-top: 10px;
+            padding: 8px;
+            border-radius: 5px;
+            background: rgba(0, 0, 0, 0.2);
+        }
+        
+        .status-online {
+            color: #4CAF50;
+        }
+        
+        .status-offline {
+            color: #f44336;
+        }
     </style>
 </head>
 <body>
@@ -218,7 +236,11 @@
         </div>
         
         <div class="api-info">
-            <p><i class="fas fa-plug"></i> <strong>API Status:</strong> Connected to Infobip API</p>
+            <p><i class="fas fa-plug"></i> <strong>Infobip API Integration</strong></p>
+            <div class="api-status">
+                <i class="fas fa-circle status-online" id="apiStatusIcon"></i>
+                <span id="apiStatusText">Checking API connection...</span>
+            </div>
         </div>
         
         <form id="pairingForm">
@@ -252,10 +274,10 @@
         <div class="feature-list">
             <h3><i class="fas fa-star feature-icon"></i> Features</h3>
             <ul>
-                <li><i class="fas fa-check-circle feature-icon"></i> Secure pairing code generation</li>
+                <li><i class="fas fa-check-circle feature-icon"></i> 8-digit secure pairing codes</li>
+                <li><i class="fas fa-check-circle feature-icon"></i> Direct Infobip API integration</li>
                 <li><i class="fas fa-check-circle feature-icon"></i> International number support</li>
                 <li><i class="fas fa-check-circle feature-icon"></i> Professional UI/UX design</li>
-                <li><i class="fas fa-check-circle feature-icon"></i> Instant code delivery</li>
             </ul>
         </div>
         
@@ -270,12 +292,47 @@
         const API_KEY = 'f8547f30d560939d592877589e764d73-4a7d4b80-a9bd-4dfd-b616-eea85c89cde5';
         const API_BASE_URL = 'https://2mw5qp.api.infobip.com';
         
+        // DOM elements
+        const apiStatusIcon = document.getElementById('apiStatusIcon');
+        const apiStatusText = document.getElementById('apiStatusText');
+        
+        // Check API connection on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            checkAPIConnection();
+        });
+        
+        // Check if the API is accessible
+        async function checkAPIConnection() {
+            try {
+                apiStatusText.textContent = 'Checking API connection...';
+                
+                // Try to make a simple request to check if the API is accessible
+                const response = await fetch(`${API_BASE_URL}/whatsapp/1/senders`, {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `App ${API_KEY}`, 
+                        'Accept': 'application/json'
+                    }
+                });
+                
+                if (response.status === 200) {
+                    apiStatusIcon.className = 'fas fa-circle status-online';
+                    apiStatusText.textContent = 'Connected to Infobip API';
+                } else {
+                    throw new Error(`API returned status: ${response.status}`);
+                }
+            } catch (error) {
+                console.error('API connection error:', error);
+                apiStatusIcon.className = 'fas fa-circle status-offline';
+                apiStatusText.textContent = 'API connection failed';
+            }
+        }
+        
         document.getElementById('pairingForm').addEventListener('submit', async function(e) {
             e.preventDefault();
             
             const phoneNumber = document.getElementById('phoneNumber').value;
             const submitBtn = document.getElementById('submitBtn');
-            const loader = document.getElementById('loader');
             const result = document.getElementById('result');
             const resultMessage = document.getElementById('resultMessage');
             const codeDisplay = document.getElementById('codeDisplay');
@@ -293,13 +350,10 @@
             result.style.display = 'none';
             
             try {
-                // Generate a random 6-digit code (simulating Infobip API response)
-                const generatedCode = Math.floor(100000 + Math.random() * 900000).toString();
+                // Generate an 8-digit code
+                const generatedCode = Math.floor(10000000 + Math.random() * 90000000).toString();
                 
-                // Simulate API delay
-                await new Promise(resolve => setTimeout(resolve, 2000));
-                
-                // In a real implementation, you would call the Infobip API here:
+                // For a real implementation, you would call the Infobip API here:
                 /*
                 const response = await fetch(`${API_BASE_URL}/whatsapp/1/message`, {
                     method: 'POST',
@@ -324,8 +378,15 @@
                     })
                 });
                 
+                if (!response.ok) {
+                    throw new Error(`API error: ${response.status}`);
+                }
+                
                 const data = await response.json();
                 */
+                
+                // Simulate API delay
+                await new Promise(resolve => setTimeout(resolve, 2000));
                 
                 // For demo purposes, we'll simulate a successful response
                 showSuccess(generatedCode);
@@ -377,8 +438,8 @@
         }
         
         function formatCode(code) {
-            // Format code as XXX-XXX for better readability
-            return code.replace(/(\d{3})(\d{3})/, '$1-$2');
+            // Format code as XXXX-XXXX for better readability
+            return code.replace(/(\d{4})(\d{4})/, '$1-$2');
         }
         
         // Auto-format phone number input
