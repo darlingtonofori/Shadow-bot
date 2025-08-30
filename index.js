@@ -170,7 +170,7 @@ app.get('/admin', requireAuth, (req, res) => {
         html += `<p>No QR code generated yet. Wait a moment and refresh.</p>`;
         res.send(html);
     }
-});
+ );
 
 // Start the Express server to serve the admin page
 app.listen(port, () => {
