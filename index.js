@@ -34,12 +34,130 @@ const requireAuth = (req, res, next) => {
     }
 };
 
-// Admin route to show QR code and status
+// Admin route to show QR code and status - THEMED VERSION
 app.get('/admin', requireAuth, (req, res) => {
     let html = `
-        <h1>NGX5 Admin Panel</h1>
-        <p><strong>Status:</strong> ${botStatus}</p>
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>NGX5 Admin Panel</title>
+        <style>
+            body {
+                background-color: #0f0f0f;
+                color: #e0e0e0;
+                font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+                margin: 0;
+                padding: 20px;
+                line-height: 1.6;
+            }
+            .container {
+                max-width: 900px;
+                margin: 0 auto;
+                background-color: #1a1a1a;
+                border-radius: 12px;
+                padding: 25px;
+                box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+                border: 1px solid #2d2d2d;
+            }
+            h1 {
+                color: #8a2be2; /* Purple */
+                text-align: center;
+                margin-bottom: 10px;
+                font-size: 2.2em;
+                text-shadow: 0 0 8px rgba(138, 43, 226, 0.4);
+            }
+            .status {
+                background-color: #2d2d2d;
+                padding: 15px;
+                border-radius: 8px;
+                margin-bottom: 20px;
+                border-left: 4px solid #4169e1; /* Royal Blue */
+            }
+            .status strong {
+                color: #4169e1;
+            }
+            .qr-container {
+                text-align: center;
+                background-color: #2d2d2d;
+                padding: 20px;
+                border-radius: 8px;
+                margin: 20px 0;
+            }
+            pre {
+                display: inline-block;
+                background-color: #0f0f0f;
+                padding: 15px;
+                border-radius: 8px;
+                border: 1px solid #4169e1;
+            }
+            .instructions {
+                background-color: #2d2d2d;
+                padding: 15px;
+                border-radius: 8px;
+                margin-top: 20px;
+                font-size: 0.9em;
+                border-left: 4px solid #8a2be2; /* Purple */
+            }
+            .footer {
+                text-align: center;
+                margin-top: 25px;
+                font-size: 0.8em;
+                color: #888;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <h1>NGX5 Admin Panel</h1>
+            
+            <div class="status">
+                <strong>Status:</strong> ${botStatus}
+            </div>
     `;
+    
+    if (qrCodeData) {
+        html += `
+            <div class="qr-container">
+                <p>Scan this QR code with <strong>YOUR PHONE</strong> to link NGX5 to your account:</p>
+        `;
+        // Generate the QR code as text for the web
+        qrcode.generate(qrCodeData, { small: true }, (qrcodeText) => {
+            html += `<pre>${qrcodeText}</pre>`;
+            html += `
+                </div>
+                <div class="instructions">
+                    <strong>Instructions:</strong><br>
+                    1. Open WhatsApp on your phone<br>
+                    2. Tap <strong>Settings → Linked Devices → Link a Device</strong><br>
+                    3. Scan the QR code shown above
+                </div>
+            `;
+            // Close the container and HTML
+            html += `
+                <div class="footer">
+                    NGX5 WhatsApp Automation System | Secure Admin Panel
+                </div>
+            </div>
+        </body>
+        </html>
+            `;
+            res.send(html);
+        });
+    } else {
+        html += `
+            <p>No QR code generated yet. Please wait a moment and refresh the page.</p>
+            <div class="footer">
+                NGX5 WhatsApp Automation System | Secure Admin Panel
+            </div>
+        </div>
+    </body>
+    </html>
+        `;
+        res.send(html);
+    }
+});
     
     if (qrCodeData) {
         html += `<p>Scan this QR code with YOUR PHONE to link NGX5 to your account:</p>`;
