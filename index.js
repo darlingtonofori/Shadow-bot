@@ -1,23 +1,21 @@
 const { Client, LocalAuth } = require('whatsapp-web.js');
 const qrcode = require('qrcode-terminal');
 const express = require('express');
-const QRCode = require('qrcode'); // Add this package for web QR codes
+const QRCode = require('qrcode');
 
 const app = express();
 const port = process.env.PORT || 3000;
 
-// Add to your package.json dependencies:
-// "qrcode": "^1.5.3"
-
 // Store the QR code and status for the admin page
 let qrCodeData = null;
 let botStatus = 'NGX5 is getting ready...';
+let isBotReady = false;
 
 const client = new Client({
     authStrategy: new LocalAuth({ clientId: "NGX5-User" }),
     puppeteer: {
         headless: true,
-        args: ['--no-sandbox', '--disable-setuid-sandbox']
+        args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage']
     }
 });
 
@@ -42,7 +40,7 @@ const requireAuth = (req, res, next) => {
     }
 };
 
-// Admin route to show QR code and status - THEMED VERSION
+// Admin route to show QR code and status
 app.get('/admin', requireAuth, async (req, res) => {
     let html = `
     <!DOCTYPE html>
@@ -52,201 +50,141 @@ app.get('/admin', requireAuth, async (req, res) => {
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>NGX5 Admin Panel</title>
         <style>
-            body {
-                background-color: #0f0f0f;
-                color: #e0e0e0;
-                font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-                margin: 0;
-                padding: 20px;
-                line-height: 1.6;
-            }
-            .container {
-                max-width: 900px;
-                margin: 0 auto;
-                background-color: #1a1a1a;
-                border-radius: 12px;
-                padding: 25px;
-                box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
-                border: 1px solid #2d2d2d;
-            }
-            h1 {
-                color: #8a2be2;
-                text-align: center;
-                margin-bottom: 10px;
-                font-size: 2.2em;
-                text-shadow: 0 0 8px rgba(138, 43, 226, 0.4);
-            }
-            .status {
-                background-color: #2d2d2d;
-                padding: 15px;
-                border-radius: 8px;
-                margin-bottom: 20px;
-                border-left: 4px solid #4169e1;
-            }
-            .status strong {
-                color: #4169e1;
-            }
-            .qr-container {
-                text-align: center;
-                background-color: #2d2d2d;
-                padding: 20px;
-                border-radius: 8px;
-                margin: 20px 0;
-            }
-            #qrcode {
-                display: inline-block;
-                background-color: white;
-                padding: 15px;
-                border-radius: 8px;
-                border: 1px solid #4169e1;
-            }
-            .instructions {
-                background-color: #2d2d2d;
-                padding: 15px;
-                border-radius: 8px;
-                margin-top: 20px;
-                font-size: 0.9em;
-                border-left: 4px solid #8a2be2;
-            }
-            .footer {
-                text-align: center;
-                margin-top: 25px;
-                font-size: 0.8em;
-                color: #888;
-            }
-            .refresh-btn {
-                background-color: #4169e1;
-                color: white;
-                border: none;
-                padding: 10px 20px;
-                border-radius: 5px;
-                cursor: pointer;
-                margin-top: 15px;
-            }
-            .refresh-btn:hover {
-                background-color: #5a7dee;
-            }
+            body { background-color: #0f0f0f; color: #e0e0e0; font-family: 'Segoe UI', sans-serif; margin: 0; padding: 20px; }
+            .container { max-width: 900px; margin: 0 auto; background-color: #1a1a1a; border-radius: 12px; padding: 25px; }
+            h1 { color: #8a2be2; text-align: center; margin-bottom: 10px; }
+            .status { background-color: #2d2d2d; padding: 15px; border-radius: 8px; margin-bottom: 20px; border-left: 4px solid #4169e1; }
+            .qr-container { text-align: center; background-color: #2d2d2d; padding: 20px; border-radius: 8px; margin: 20px 0; }
+            #qrcode { display: inline-block; background-color: white; padding: 15px; border-radius: 8px; }
+            .instructions { background-color: #2d2d2d; padding: 15px; border-radius: 8px; margin-top: 20px; }
+            .footer { text-align: center; margin-top: 25px; color: #888; }
+            .refresh-btn { background-color: #4169e1; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; margin-top: 15px; }
         </style>
     </head>
     <body>
         <div class="container">
             <h1>NGX5 Admin Panel</h1>
-            
             <div class="status">
-                <strong>Status:</strong> ${botStatus}
+                <strong>Status:</strong> ${botStatus}<br>
+                <strong>Bot Ready:</strong> ${isBotReady ? '✅ Yes' : '❌ No'}
             </div>
     `;
     
     if (qrCodeData) {
         try {
-            // Generate a proper QR code image for the web
             const qrCodeImage = await QRCode.toDataURL(qrCodeData);
-            
             html += `
                 <div class="qr-container">
-                    <p>Scan this QR code with <strong>YOUR PHONE</strong> to link NGX5 to your account:</p>
+                    <p>Scan this QR code with YOUR PHONE:</p>
                     <img src="${qrCodeImage}" id="qrcode" alt="WhatsApp QR Code">
                     <br>
-                    <button class="refresh-btn" onclick="location.reload()">Refresh QR Code</button>
-                </div>
-                <div class="instructions">
-                    <strong>Instructions:</strong><br>
-                    1. Open WhatsApp on your phone<br>
-                    2. Tap <strong>Settings → Linked Devices → Link a Device</strong><br>
-                    3. Scan the QR code shown above
+                    <button class="refresh-btn" onclick="location.reload()">Refresh</button>
                 </div>
             `;
         } catch (err) {
-            html += `
-                <div class="qr-container">
-                    <p>Error generating QR code. Please try refreshing the page.</p>
-                    <button class="refresh-btn" onclick="location.reload()">Refresh Page</button>
-                </div>
-            `;
-            console.error('QR code generation error:', err);
+            html += `<div class="qr-container"><p>Error generating QR code</p></div>`;
         }
     } else {
-        html += `
-            <div class="qr-container">
-                <p>No QR code generated yet. Please wait a moment...</p>
-                <button class="refresh-btn" onclick="location.reload()">Refresh Page</button>
-            </div>
-        `;
+        html += `<div class="qr-container"><p>No QR code needed - already connected</p></div>`;
     }
     
-    // Close the container and HTML
     html += `
-            <div class="footer">
-                NGX5 WhatsApp Automation System | Secure Admin Panel
+            <div class="instructions">
+                <strong>Testing Instructions:</strong><br>
+                1. Open WhatsApp on your phone<br>
+                2. Send <code>.ping</code> in any chat<br>
+                3. Bot should reply with "Pong! 🏓"<br>
+                4. Check Render logs for debugging info
             </div>
+            <div class="footer">NGX5 WhatsApp Automation System</div>
         </div>
     </body>
-    </html>
-    `;
+    </html>`;
     
     res.send(html);
 });
 
-// Start the Express server to serve the admin page
+// Start the Express server
 app.listen(port, () => {
-    console.log(`NGX5 Admin panel is ready at: http://localhost:${port}/admin`);
+    console.log(`NGX5 Admin panel ready at: http://localhost:${port}/admin`);
 });
 
 // WhatsApp Client Events
 client.on('qr', (qr) => {
     qrCodeData = qr;
-    botStatus = 'Scan the QR code in the admin panel to link your account.';
+    botStatus = 'Scan QR code to link your account';
+    isBotReady = false;
     console.log('QR code received. Visit /admin to see it.');
-    // Also show in terminal for debugging
     qrcode.generate(qr, { small: true });
 });
 
 client.on('ready', () => {
     qrCodeData = null;
-    botStatus = '✅ NGX5 is online and connected to your account!';
-    console.log(botStatus);
+    botStatus = '✅ NGX5 is online and connected!';
+    isBotReady = true;
+    console.log('✅ NGX5 is ready!');
+    console.log('Test by sending ".ping" in any WhatsApp chat');
 });
 
-client.on('message_create', async (msg) => {
-    const text = msg.body;
-    const chat = await msg.getChat();
+client.on('auth_failure', (msg) => {
+    console.error('❌ Authentication failed:', msg);
+    botStatus = '❌ Authentication failed - rescan QR code';
+});
 
-    if (msg.fromMe && text.startsWith('.')) {
-        const command = text.split(' ')[0].toLowerCase();
+client.on('disconnected', (reason) => {
+    console.log('❌ Client was logged out:', reason);
+    botStatus = '❌ Disconnected - rescan QR code';
+    isBotReady = false;
+});
 
-        switch(command) {
-            case '.arise':
+// IMPROVED MESSAGE HANDLING
+client.on('message', async (msg) => {
+    // Debug: log all messages
+    console.log('Received message:', {
+        from: msg.from,
+        fromMe: msg.fromMe,
+        body: msg.body,
+        type: msg.type
+    });
+
+    // Only respond to text messages from yourself that start with a dot
+    if (msg.type === 'chat' && msg.fromMe && msg.body && msg.body.startsWith('.')) {
+        const text = msg.body.toLowerCase().trim();
+        console.log('Processing command:', text);
+
+        try {
+            if (text === '.ping') {
+                console.log('Sending pong response');
+                await msg.reply('Pong! 🏓');
+            }
+            else if (text === '.arise') {
                 const menuText = `🛠 *NGX5 Bot Menu* 🛠
 
 *.ping* - Check if I'm online
-*.typesimu* - Simulate typing for 15s
-*.reclaim* - Simulate recording for 15s
-*.bluetick* - Auto-read messages (seen)
-*.broadcast* - Broadcast a message
-*.vv* - Save a view-once message
+*.typesimu* - Simulate typing
+*.reclaim* - Simulate recording
+*.bluetick* - Auto-read messages
+*.broadcast* - Broadcast message
+*.vv* - Save view-once media
 *.autoreply* - Toggle auto-reply
-*.autoreply_set [message]* - Set auto-reply text
-*.search [query]* - Google search
 
-*Current Auto-Reply:* "MY SENPIA AIN'T AVAILABLE!"`;
-                chat.sendMessage(menuText);
-                break;
-
-            case '.ping':
-                chat.sendMessage('Pong! 🏓');
-                break;
-
-            case '.bluetick':
-                chat.sendMessage("Bluetick feature enabled for this chat.");
-                break;
-                
-            case '.autoreply':
-                chat.sendMessage('Auto-reply is: ON ✅\nMessage: "MY SENPIA AIN\'T AVAILABLE!"');
-                break;
-
-            // Add other commands here
+*Status:* ✅ Connected`;
+                await msg.reply(menuText);
+            }
+            else if (text === '.autoreply') {
+                await msg.reply('Auto-reply is: ON ✅\nMessage: "MY SENPAI AIN\'T AVAILABLE!"');
+            }
+            else {
+                await msg.reply(`Unknown command: ${text}\nUse .arise for menu`);
+            }
+            
+            console.log('Command processed successfully');
+        } catch (error) {
+            console.error('Error processing command:', error);
         }
     }
 });
 
+// Initialize the client
+console.log('Initializing WhatsApp client...');
 client.initialize();
